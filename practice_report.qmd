@@ -1,6 +1,6 @@
 ---
 title: "My First Report"
-author: "Your Name"
+author: "Tyler Ngo"
 format:
   html:
     embed-resources: true
@@ -16,12 +16,11 @@ Try it now: change `author: "Your Name"` in the header above to your own name,
 then click **Render**.
 
 ## A first look at the data
-
 The code chunk below reads a small practice dataset from the `data/` folder and
 shows the first few rows.
 
 ```{r}
-patients <- read.csv("data/patients.csv")
+patients <- read.csv("data/patients.csv") #has dataset as var. "patients"
 head(patients)
 ```
 
@@ -36,7 +35,8 @@ hist(patients$age,
 
 ## Your turn
 
-- Add a sentence here describing what you notice in the chart.
+- Within the surveyed population, there was a higher frequency of patients between the ages of 40-70 compared to the frequency of patients in other age groups.
+- **AI** was used to explain *error* in opening **Quatro: Preview**, solution was to add file name at the end of the path in the URL chunk as /practice_report.qmd.
 - Render again and check that both your sentence and the chart appear.
 
 When you are happy with the result, **commit and sync** your work (the Week 2
