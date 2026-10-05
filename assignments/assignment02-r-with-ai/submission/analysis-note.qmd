@@ -78,8 +78,8 @@ mean_sd(nhanes_analysis$BMI)
 ## Save Output
 
 ```{r}
-dir.create("output", recursive = TRUE, showWarnings = FALSE)
-write_csv(bmi_summary, "output/summary_table.csv")
+dir.create("assignments/assignment02-r-with-ai/submission/output", recursive = TRUE, showWarnings = FALSE)
+write_csv(bmi_summary, "assignments/assignment02-r-with-ai/submission/output/summary_table.csv")
 ```
 
 ## AI Audit Note
