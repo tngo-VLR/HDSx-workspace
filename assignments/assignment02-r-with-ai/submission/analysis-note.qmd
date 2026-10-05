@@ -15,7 +15,8 @@ library(dplyr)
 ## Load Data
 
 ```{r}
-# AI-AUDIT: AI helped confirm the repository-root-relative path; verified by rendering from the project root.
+# AI prompt: Use a repository-root-relative path to import the NHANES CSV.
+# Verified: The path resolves and the CSV imports when rendered from the repository root.
 nhanes <- read_csv("examples/nhanes-equity/data/nhanes_equity_v6.csv", show_col_types = FALSE)
 ```
 
@@ -38,7 +39,8 @@ variable_inspection
 Compare body mass index (BMI) across income groups, using records with non-missing BMI and income group.
 
 ```{r}
- # AI-AUDIT: AI helped shape this analysis-ready pipeline; checked that it excludes missing analysis fields and retains the intended variables.
+# AI prompt: Prepare BMI and income-group records for grouped BMI summaries, and write a reusable mean/SD function.
+# Verified: BMI and IncomeGroup exist in the imported data; the pipeline excludes missing values, and the rendered summaries run.
 nhanes_analysis <- nhanes |>
   filter(!is.na(BMI), !is.na(IncomeGroup)) |>
   mutate(IncomeGroup = trimws(IncomeGroup)) |>
@@ -59,7 +61,8 @@ bmi_summary
 ## Function
 
 ```{r}
- # AI-AUDIT: AI helped draft this reusable numeric summary; verified against the complete-case BMI data above.
+# AI prompt: Return the non-missing count, mean, and SD for a numeric vector.
+# Verified: The helper runs on analysis-ready BMI values and returns n, mean, and sd.
 mean_sd <- function(x) {
   values <- x[!is.na(x)]
   data.frame(
@@ -81,4 +84,4 @@ write_csv(bmi_summary, "output/summary_table.csv")
 
 ## AI Audit Note
 
-AI assistance was used to organize the requested inspection, analysis-ready pipeline, summary function, and output-writing code. The CSV path and output path were checked by rendering from the repository root. The rendered inspection shows the dataset dimensions, column names, inferred types, and missing-value counts; the analysis excludes rows missing BMI or income group before calculating group summaries. The note was rendered successfully and the saved CSV was checked for its required filename and contents.
+See `ai-use-note.md` for the required AI-use audit trail and verification summary.
