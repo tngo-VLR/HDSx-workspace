@@ -1,0 +1,84 @@
+---
+title: "Assignment 2 Starter Analysis"
+format: html
+---
+
+## Setup
+
+```{r}
+#| message: false
+#| warning: false
+library(readr)
+library(dplyr)
+```
+
+## Load Data
+
+```{r}
+# AI-AUDIT: AI helped confirm the repository-root-relative path; verified by rendering from the project root.
+nhanes <- read_csv("examples/nhanes-equity/data/nhanes_equity_v6.csv", show_col_types = FALSE)
+```
+
+## Inspect
+
+```{r}
+cat("Rows:", nrow(nhanes), "\nColumns:", ncol(nhanes), "\n")
+names(nhanes)
+
+variable_inspection <- data.frame(
+  variable = names(nhanes),
+  type = vapply(nhanes, function(column) class(column)[1], character(1)),
+  missing = colSums(is.na(nhanes))
+)
+variable_inspection
+```
+
+## Summarize
+
+Compare body mass index (BMI) across income groups, using records with non-missing BMI and income group.
+
+```{r}
+ # AI-AUDIT: AI helped shape this analysis-ready pipeline; checked that it excludes missing analysis fields and retains the intended variables.
+nhanes_analysis <- nhanes |>
+  filter(!is.na(BMI), !is.na(IncomeGroup)) |>
+  mutate(IncomeGroup = trimws(IncomeGroup)) |>
+  select(IncomeGroup, BMI, Age, Gender)
+
+bmi_summary <- nhanes_analysis |>
+  group_by(IncomeGroup) |>
+  summarise(
+    n = n(),
+    mean_bmi = mean(BMI),
+    sd_bmi = sd(BMI),
+    .groups = "drop"
+  )
+
+bmi_summary
+```
+
+## Function
+
+```{r}
+ # AI-AUDIT: AI helped draft this reusable numeric summary; verified against the complete-case BMI data above.
+mean_sd <- function(x) {
+  values <- x[!is.na(x)]
+  data.frame(
+    n = length(values),
+    mean = mean(values),
+    sd = sd(values)
+  )
+}
+
+mean_sd(nhanes_analysis$BMI)
+```
+
+## Save Output
+
+```{r}
+dir.create("output", recursive = TRUE, showWarnings = FALSE)
+write_csv(bmi_summary, "output/summary_table.csv")
+```
+
+## AI Audit Note
+
+AI assistance was used to organize the requested inspection, analysis-ready pipeline, summary function, and output-writing code. The CSV path and output path were checked by rendering from the repository root. The rendered inspection shows the dataset dimensions, column names, inferred types, and missing-value counts; the analysis excludes rows missing BMI or income group before calculating group summaries. The note was rendered successfully and the saved CSV was checked for its required filename and contents.
