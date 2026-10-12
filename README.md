@@ -69,6 +69,10 @@ package with instructor approval, document it in the assignment dependency note
 and update the appropriate devcontainer list so a fresh Codespace can install
 it.
 
+For the Git collaboration assignment, keep each documentation change narrow and
+reviewable so the diff clearly shows the intended update without unrelated
+content changes.
+
 ## Important
 
 - **`data/` is read-only.** Import from it; never save into it.
