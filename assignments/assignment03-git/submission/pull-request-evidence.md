@@ -1,8 +1,8 @@
 # Pull request evidence
 
 - Branch name: `docs/git-audit-note`
-- Final commit hash: pending final commit after staging the assignment evidence files
-- PR status: no PR URL generated in this environment because GitHub browser/CLI PR creation is not available here.
+- Final commit hash: `8244309a6e2a353db061bb5b069cf23572cb88a1`
+- PR status: a new PR can be opened at `https://github.com/tngo-VLR/HDSx-workspace/pull/new/docs/git-audit-note`, but the environment does not allow completing the GitHub web form automatically.
 - Explanation: the repository was updated on a dedicated branch with a limited documentation-only diff and the assignment evidence files were added in the required submission folder. This is the equivalent evidence for the assignment when a PR cannot be opened from the current environment.
 
 ## Verified Git evidence
