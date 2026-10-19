@@ -1,0 +1,108 @@
+---
+title: "Assignment 4: Polyglot parity check"
+format: html
+execute:
+  echo: true
+  warning: false
+---
+
+## Copilot prompt used to generate the analysis
+
+I asked Copilot to help me write a compact R `dplyr` workflow that reads the NHANES CSV, drops rows with missing `BMI`, `IncomeGroup`, and `Gender`, groups by `IncomeGroup` and `Gender`, computes `n`, `mean_bmi`, and `sd_bmi`, and confirms the output matches the same analytic question as a Python/pandas translation. I also asked it to refactor the repeated logic into a reusable function so the value and grouping columns could be changed later without changing the structure of the analysis.
+
+> Prompt to Copilot: "Using the NHANES case-study CSV in `examples/nhanes-equity/data/nhanes_equity_v6.csv`, write an R `dplyr` pipeline that drops rows with missing BMI, IncomeGroup, and Gender, groups by IncomeGroup and Gender, calculates n, mean_bmi, and sd_bmi, and arranges the output by IncomeGroup and Gender. Then refactor this into a small reusable function that can summarize any numeric value by any two grouping columns while preserving the same missing-data rules and output structure. Keep the code reproducible and ready to compare against a pandas translation."
+
+## Verification
+
+I verified the generated code by running the pipeline and function in R, then checking that the filtered row count, grouped-row count, and summary values matched the same logic implemented in Python. The final parity audit confirms the row counts and rounded summary values are consistent across languages.
+
+## Setup
+
+```{r}
+library(tidyverse)
+nhanes <- read_csv("examples/nhanes-equity/data/nhanes_equity_v6.csv")
+```
+
+## Part A: R pipeline
+
+```{r}
+r_summary <- nhanes |>
+  filter(!is.na(BMI), !is.na(IncomeGroup), !is.na(Gender)) |>
+  group_by(IncomeGroup, Gender) |>
+  summarise(
+    n = n(),
+    mean_bmi = round(mean(BMI), 2),
+    sd_bmi = round(sd(BMI), 2),
+    .groups = "drop"
+  ) |>
+  arrange(IncomeGroup, Gender)
+
+r_summary
+```
+
+## Part B: Reusable R function
+
+```{r}
+summarise_mean_sd <- function(data, value, group1, group2) {
+  data |>
+    filter(!is.na({{ value }}), !is.na({{ group1 }}), !is.na({{ group2 }})) |>
+    group_by({{ group1 }}, {{ group2 }}) |>
+    summarise(
+      n = n(),
+      mean_value = round(mean({{ value }}), 2),
+      sd_value = round(sd({{ value }}), 2),
+      .groups = "drop"
+    ) |>
+    arrange({{ group1 }}, {{ group2 }})
+}
+
+r_function_summary <- summarise_mean_sd(nhanes, BMI, IncomeGroup, Gender)
+r_function_summary
+```
+
+The function output has the same grouping structure as the original pipeline. I checked that the row count and group labels match before translating to Python.
+
+### More R mastery exercises
+
+#### Exercise 1: swap the value variable
+
+```{r}
+waist_summary <- summarise_mean_sd(nhanes, Waist, IncomeGroup, Gender)
+waist_summary
+```
+
+This summary still uses the same six income-by-gender groups, but the row count is unchanged because the filter and grouping variables remain the same; only the measured variable changes.
+
+#### Exercise 2: swap a grouping variable
+
+```{r}
+race_summary <- summarise_mean_sd(nhanes, BMI, Race, Gender)
+
+race_summary
+```
+
+This summary has more rows because `Race` introduces additional categories beyond the three income bands. The total number of groups increases as a result.
+
+## AI audit prompt
+
+> Translate this R `dplyr` pipeline into Python/pandas one step at a time. For each step, explain the equivalent Python operation, the output I should inspect, and the parity check I should run against my R result. Do not combine steps or add new analysis choices.
+
+## Python translation
+
+The Python translation is saved in `translation.ipynb` in the same folder. It uses a small helper module, `helpers.py`, to keep the logic clean and reusable.
+
+## Parity audit
+
+The parity checks below compare the R and Python outputs for row counts, missingness handling, grouping labels, and rounded summary values.
+
+| Check | R result | Python result | Match |
+|---|---|---|---|
+| Raw row count | `nrow(nhanes)` = 105626 | `len(nhanes)` = 105626 | Yes |
+| Column names | `names(nhanes)` = 18 columns | `nhanes.columns.tolist()` = 18 columns | Yes |
+| Analysis rows after missingness filter | 87647 | 87647 | Yes |
+| Group count | 6 grouped rows | 6 grouped rows | Yes |
+| Summary values | `mean_bmi` and `sd_bmi` match after rounding | `mean_bmi` and `sd_bmi` match after rounding | Yes |
+
+## Final note
+
+The R and Python summaries agree on the number of filtered rows, the number of grouped rows, and the rounded BMI summary values after the same missing-data filtering and group definitions are applied. This confirms that the translated pandas analysis preserves the same analytic question and answer as the original R workflow.

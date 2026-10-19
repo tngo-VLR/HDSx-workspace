@@ -1,0 +1,6 @@
+Check,R result,Python result,Match
+Raw row count,"105626","105626",Yes
+Column names,"18 columns; expected NHANES variables","18 columns; expected NHANES variables",Yes
+Analysis rows after missingness filter,"87647","87647",Yes
+Group count,"6 grouped rows","6 grouped rows",Yes
+Summary values,"mean_bmi = [25.74, 26.11, 25.95, 24.05, 26.39, 25.52]; sd_bmi = [7.51, 6.81, 8.65, 7.17, 8.20, 7.22]","mean_bmi = [25.74, 26.11, 25.95, 24.05, 26.39, 25.52]; sd_bmi = [7.51, 6.81, 8.65, 7.17, 8.20, 7.22]",Yes
