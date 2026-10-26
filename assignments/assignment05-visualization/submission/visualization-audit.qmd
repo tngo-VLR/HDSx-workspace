@@ -32,23 +32,25 @@ summary_df <- nhanes |>
       IncomeGroup,
       levels = c("Low Income (<1.3)", "Middle Income", "High Income (>3.5)")
     ),
-    Cycle = factor(Cycle, levels = sort(unique(Cycle)))
+    Cycle = factor(Cycle, levels = sort(unique(Cycle))),
+    CycleYear = as.numeric(substr(as.character(Cycle), 1, 4))
   ) |>
-  group_by(Cycle, IncomeGroup) |>
+  group_by(Cycle, CycleYear, IncomeGroup) |>
   summarise(mean_bmi = mean(BMI), .groups = "drop")
 ```
 
 ## Audit of the flawed starter
 
-The flawed version was misleading in five ways:
+The flawed version was misleading in six ways:
 
 1. The y-axis was cut off at 24 to 28, which visually inflated differences between income groups.
 2. The title claimed a causal story: "Low income drives rising obesity," even though the plot only summarized averages in a descriptive snapshot.
 3. The subtitle described an age range that was not actually filtered in the code, so the sample was not clearly defined.
 4. The plot did not explain that rows with missing BMI or IncomeGroup were excluded and that the figure is unweighted.
 5. The timeline omitted the missing COVID cycle (2019-2020), which makes the series look continuous even though that year is absent from the dataset.
+6. Treating cycles as equally spaced categories hides the longer gap between 2017-2018 and 2021-2023.
 
-I corrected these by using a full y-axis, an honest title, and a caption that states the statistic, exclusions, and descriptive limits, including the fact that the 2019-2020 cycle is not available in this snapshot.
+I corrected these by using a zero-based y-axis, an honest title, and a caption that states the statistic, exclusions, and descriptive limits. The x-axis uses cycle start years so the longer gap before 2021-2023 is visible, and the caption notes that 2019-2020 is not available in this snapshot.
 
 ## Corrected figure
 
@@ -57,7 +59,7 @@ I corrected these by using a full y-axis, an honest title, and a caption that st
 # Verified: The ggplot uses the same filtered mean-BMI summary, the axis is not truncated, and the title and caption stay descriptive rather than causal while explicitly noting the missing 2019-2020 COVID cycle.
 final_plot <- ggplot(
   summary_df,
-  aes(x = Cycle, y = mean_bmi, color = IncomeGroup, group = IncomeGroup)
+  aes(x = CycleYear, y = mean_bmi, color = IncomeGroup, group = IncomeGroup)
 ) +
   geom_line(linewidth = 1) +
   geom_point(size = 2.2) +
@@ -66,13 +68,24 @@ final_plot <- ggplot(
     expand = c(0, 0),
     breaks = seq(0, 35, 5)
   ) +
+  scale_x_continuous(
+    breaks = unique(summary_df$CycleYear),
+    labels = levels(summary_df$Cycle),
+    expand = expansion(mult = c(0.02, 0.02))
+  ) +
   labs(
     title = "Mean BMI by income group across NHANES cycles",
-    subtitle = "Descriptive comparison in the classroom NHANES snapshot; values are unweighted and not adjusted for design weights",
+    subtitle = paste(strwrap(
+      "Descriptive comparison in the classroom NHANES snapshot; values are unweighted and not adjusted for design weights",
+      width = 100
+    ), collapse = "\n"),
     x = "NHANES cycle",
     y = "Mean BMI",
     color = "Income group",
-    caption = "Data source: example NHANES equity snapshot. Statistic: mean BMI among adults with non-missing BMI and income-group values across the available cycles. Exclusions: rows with missing BMI or IncomeGroup were removed; the 2019-2020 COVID cycle is not present in this snapshot. Limitation: this is a descriptive, unweighted classroom snapshot and does not establish causal effects or represent the full U.S. adult population."
+    caption = paste(strwrap(
+      "Source: classroom NHANES equity snapshot. Statistic: unweighted mean BMI among participants with non-missing BMI and IncomeGroup. Mean BMI was roughly 24-25 in 1999-2000 and 27-28 in 2021-2023 across income groups. Rows missing BMI or IncomeGroup were excluded; 2019-2020 is absent from this file. Descriptive only; not a design-weighted national estimate and does not establish causality.",
+      width = 115
+    ), collapse = "\n")
   ) +
   theme_minimal(base_size = 12) +
   theme(
@@ -103,7 +116,7 @@ ggsave(
 
 ## Final caption
 
-The plot reports mean BMI by income group across the available NHANES cycles in the classroom snapshot. Mean BMI rises from roughly 24-25 in 1999-2000 to about 27-28 by 2021-2023 across all groups, but the 2019-2020 COVID cycle is missing from this data file, and the comparison is descriptive, unweighted, and not causal.
+The plot reports the unweighted mean BMI by income group among participants with non-missing BMI and income-group values. Means are roughly 24-25 in 1999-2000 and 27-28 in 2021-2023; 2019-2020 is absent from this snapshot, and the descriptive comparison is not a design-weighted national estimate or evidence of causality.
 
 ## M1 connection
 
