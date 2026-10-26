@@ -1,0 +1,1 @@
+This plot shows why the M1 project should define the unit of analysis, the exclusion rules, and whether a result is weighted or descriptive before making a claim. A well-checked visualization helps the audience interpret the evidence accurately and keeps my project proposal aligned with what the data can actually support.

@@ -1,0 +1,110 @@
+---
+title: "Visualization Audit and Revision"
+format:
+  html:
+    toc: true
+    theme: cosmo
+    embed-resources: true
+execute:
+  echo: false
+  warning: false
+---
+
+## Plot question
+
+This figure answers: How does the mean BMI compare across income groups over time in the classroom NHANES snapshot?
+
+## Reproducible data and summary
+
+```{r}
+# AI prompt: "Load the NHANES classroom dataset with a repository-root relative path, filter to complete BMI and income-group records, and compute mean BMI by cycle and income group for a descriptive audit plot."
+# Verified: The CSV imports successfully from the repository root, the required columns are present, and the grouped summary calculates one mean BMI value per cycle and income group after excluding missing data.
+library(readr)
+library(dplyr)
+library(ggplot2)
+
+nhanes <- read_csv("examples/nhanes-equity/data/nhanes_equity_v6.csv", show_col_types = FALSE)
+
+summary_df <- nhanes |>
+  filter(!is.na(BMI), !is.na(IncomeGroup)) |>
+  mutate(
+    IncomeGroup = factor(
+      IncomeGroup,
+      levels = c("Low Income (<1.3)", "Middle Income", "High Income (>3.5)")
+    ),
+    Cycle = factor(Cycle, levels = sort(unique(Cycle)))
+  ) |>
+  group_by(Cycle, IncomeGroup) |>
+  summarise(mean_bmi = mean(BMI), .groups = "drop")
+```
+
+## Audit of the flawed starter
+
+The flawed version was misleading in five ways:
+
+1. The y-axis was cut off at 24 to 28, which visually inflated differences between income groups.
+2. The title claimed a causal story: "Low income drives rising obesity," even though the plot only summarized averages in a descriptive snapshot.
+3. The subtitle described an age range that was not actually filtered in the code, so the sample was not clearly defined.
+4. The plot did not explain that rows with missing BMI or IncomeGroup were excluded and that the figure is unweighted.
+5. The timeline omitted the missing COVID cycle (2019-2020), which makes the series look continuous even though that year is absent from the dataset.
+
+I corrected these by using a full y-axis, an honest title, and a caption that states the statistic, exclusions, and descriptive limits, including the fact that the 2019-2020 cycle is not available in this snapshot.
+
+## Corrected figure
+
+```{r}
+# AI prompt: "Create a descriptive line plot of mean BMI by NHANES cycle for each income group, using an honest y-axis and a non-causal title and caption that note the available cycles, exclusions, and unweighted nature of the snapshot."
+# Verified: The ggplot uses the same filtered mean-BMI summary, the axis is not truncated, and the title and caption stay descriptive rather than causal while explicitly noting the missing 2019-2020 COVID cycle.
+final_plot <- ggplot(
+  summary_df,
+  aes(x = Cycle, y = mean_bmi, color = IncomeGroup, group = IncomeGroup)
+) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2.2) +
+  scale_y_continuous(
+    limits = c(0, 35),
+    expand = c(0, 0),
+    breaks = seq(0, 35, 5)
+  ) +
+  labs(
+    title = "Mean BMI by income group across NHANES cycles",
+    subtitle = "Descriptive comparison in the classroom NHANES snapshot; values are unweighted and not adjusted for design weights",
+    x = "NHANES cycle",
+    y = "Mean BMI",
+    color = "Income group",
+    caption = "Data source: example NHANES equity snapshot. Statistic: mean BMI among adults with non-missing BMI and income-group values across the available cycles. Exclusions: rows with missing BMI or IncomeGroup were removed; the 2019-2020 COVID cycle is not present in this snapshot. Limitation: this is a descriptive, unweighted classroom snapshot and does not establish causal effects or represent the full U.S. adult population."
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "bottom",
+    plot.caption = element_text(hjust = 0)
+  )
+
+final_plot
+```
+
+```{r}
+# AI prompt: "Export the corrected BMI audit plot as corrected-plot.png in the assignment submission folder using a repository-relative path so the output is reproducible."
+# Verified: The directory is created if needed and the image is written successfully to the required submission folder in the workspace.
+output_dir <- "assignments/assignment05-visualization/submission"
+if (!dir.exists(output_dir)) {
+  dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+}
+
+ggsave(
+  file.path(output_dir, "corrected-plot.png"),
+  plot = final_plot,
+  width = 8,
+  height = 5,
+  dpi = 300
+)
+```
+
+## Final caption
+
+The plot reports mean BMI by income group across the available NHANES cycles in the classroom snapshot. Mean BMI rises from roughly 24-25 in 1999-2000 to about 27-28 by 2021-2023 across all groups, but the 2019-2020 COVID cycle is missing from this data file, and the comparison is descriptive, unweighted, and not causal.
+
+## M1 connection
+
+This standard matters for my M1 project because every plot should state the unit of analysis, the exclusions, and whether a summary is weighted or descriptive. That makes the figure easier for a target audience to interpret and reduces the risk of overclaiming beyond what the data can support.

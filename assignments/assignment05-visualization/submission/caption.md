@@ -1,0 +1,1 @@
+Data source: example NHANES equity snapshot. Statistic: mean BMI among adults with non-missing BMI and income-group values across NHANES cycles. Exclusions: rows with missing BMI or IncomeGroup were removed. Limitation: this is a descriptive, unweighted classroom snapshot and does not establish causal effects or represent the full U.S. adult population.
