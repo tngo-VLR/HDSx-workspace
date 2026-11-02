@@ -1,0 +1,115 @@
+---
+title: "EDA and Table 1: NHANES Health Equity Classroom Dataset"
+format:
+  html:
+    embed-resources: true
+execute:
+  message: false
+  warning: false
+---
+
+# Data and purpose
+
+This descriptive analysis uses the cached NHANES Health Equity classroom CSV at `examples/nhanes-equity/data/nhanes_equity_v6.csv`. The file is a prepared snapshot derived from CDC/NCHS NHANES public-use data. It is used here for classroom practice, not as a survey-weighted population estimate or a causal analysis.
+
+# Analysis cohort
+
+The analysis cohort includes records with a non-missing age from 20 through 80 years, inclusive. Records with missing age or ages outside that range are excluded. The cohort flow is shown before the variable summaries.
+
+```{r}
+#| label: load-cached-data
+# AI prompt: Load the committed NHANES classroom CSV from its repository-relative path, stop clearly if it is absent, and avoid retrieving data from the internet.
+# Verified: Rendering from the repository root reads the cached file and reports 105,626 rows with the expected Age, BMI, and IncomeGroup columns.
+library(tidyverse)
+library(knitr)
+
+data_path <- "examples/nhanes-equity/data/nhanes_equity_v6.csv"
+if (!file.exists(data_path)) {
+  stop("Could not find the cached NHANES classroom CSV at: ", data_path)
+}
+
+nhanes <- read_csv(data_path, show_col_types = FALSE)
+stopifnot(all(c("Age", "BMI", "IncomeGroup") %in% names(nhanes)))
+```
+
+```{r}
+#| label: define-cohort
+# AI prompt: Define the inclusive age-20-to-80 cohort, make missing-age and out-of-range exclusions visible, and report a mutually exclusive cohort flow before any grouped summaries.
+# Verified: The cohort contains 57,137 records; missing-age and out-of-range counts plus included records sum to the 105,626 input rows, and every included age is within 20-80.
+analysis_cohort <- nhanes |>
+  filter(!is.na(Age), Age >= 20, Age <= 80)
+
+cohort_flow <- tibble(
+  Stage = c(
+    "All input records",
+    "Excluded: missing age",
+    "Excluded: age below 20 or above 80",
+    "Included: age 20-80, inclusive"
+  ),
+  N = c(
+    nrow(nhanes),
+    sum(is.na(nhanes$Age)),
+    sum(!is.na(nhanes$Age) & (nhanes$Age < 20 | nhanes$Age > 80)),
+    nrow(analysis_cohort)
+  )
+)
+
+stopifnot(
+  sum(cohort_flow$N[2:4]) == nrow(nhanes),
+  all(analysis_cohort$Age >= 20 & analysis_cohort$Age <= 80)
+)
+
+kable(cohort_flow, caption = "Cohort flow for the inclusive age 20-80 restriction.")
+```
+
+# Missingness
+
+Missingness is reported for age, BMI, and income group within the eligible age cohort before making the complete-case Table 1. The Table 1 excludes only records missing BMI or income group; missingness is not silently removed across unrelated columns.
+
+```{r}
+#| label: summarize-missingness
+# AI prompt: Before the Table 1, count missing Age, BMI, and IncomeGroup within the defined age cohort and show each count with its denominator and percentage.
+# Verified: The rendered table uses 57,137 as the cohort denominator and reports 0 missing Age, 1,009 missing BMI, and 5,395 missing IncomeGroup, matching direct sums over analysis_cohort.
+missingness <- tibble(
+  Variable = c("Age", "BMI", "IncomeGroup"),
+  `Cohort N` = nrow(analysis_cohort),
+  `Missing N` = c(
+    sum(is.na(analysis_cohort$Age)),
+    sum(is.na(analysis_cohort$BMI)),
+    sum(is.na(analysis_cohort$IncomeGroup))
+  )
+) |>
+  mutate(`Missing percent` = sprintf("%.1f%%", 100 * `Missing N` / `Cohort N`))
+
+kable(missingness, caption = "Missing values in variables used for the cohort summary.")
+```
+
+# Table 1
+
+The Table 1 uses complete cases for BMI and income group within the age cohort. It reports the number of records and the mean (sample standard deviation) for BMI and age in each income group. These are unweighted descriptive statistics for the prepared classroom dataset; they do not establish that income determines BMI, estimate causal effects, or represent national population estimates.
+
+```{r}
+#| label: create-table1
+# AI prompt: Within the age cohort, summarize complete cases for BMI and IncomeGroup by IncomeGroup; report N, BMI mean (sample SD), and age mean (sample SD), then export the generated table as a CSV in this submission folder.
+# Verified: The rendered table has one row per income group and matches independent calculations from the cached CSV: N is 16,330, 15,293, and 19,228; the group BMI means are 28.6, 29.4, and 29.3. The exported CSV has the same rows and columns.
+table1 <- analysis_cohort |>
+  filter(!is.na(BMI), !is.na(IncomeGroup)) |>
+  group_by(IncomeGroup) |>
+  summarise(
+    N = n(),
+    `BMI, mean (SD)` = sprintf("%.1f (%.1f)", mean(BMI), sd(BMI)),
+    `Age, mean (SD)` = sprintf("%.1f (%.1f)", mean(Age), sd(Age)),
+    .groups = "drop"
+  )
+
+write_csv(
+  table1,
+  "assignments/assignment06-eda-ai-audit/submission/table1.csv"
+)
+
+kable(table1, caption = "Unweighted descriptive summary by income group.")
+```
+
+# Methods note
+
+We analyzed the prepared NHANES Health Equity classroom CSV snapshot. The cohort included records with age 20-80, inclusive. We summarized N, BMI mean (SD), and age mean (SD) by income group using unweighted descriptive statistics. Records with missing BMI or income group were excluded from the Table 1 after missingness counts were reported. The summary describes this prepared classroom dataset only and should not be interpreted as a causal effect or a population estimate.
