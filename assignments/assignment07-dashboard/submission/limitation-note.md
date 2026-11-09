@@ -1,0 +1,1 @@
+This unweighted classroom summary does not account for NHANES survey design, is not a national estimate, and cannot establish that income causes differences in BMI.

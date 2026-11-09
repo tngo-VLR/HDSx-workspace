@@ -1,0 +1,1 @@
+From `assignments/assignment07-dashboard/submission/`, run `quarto render dashboard.qmd`; it resolves the repository's `_quarto.yml`, uses the relative classroom-data path, and creates `dashboard.html` beside the source. This was verified in the current Codespace, but a newly recreated Codespace was not independently tested.
