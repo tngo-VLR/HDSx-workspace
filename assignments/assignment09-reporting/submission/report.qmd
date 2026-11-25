@@ -1,0 +1,156 @@
+---
+title: "NHANES Equity Practice Report"
+author: "Tyler_Ngo"
+format:
+  html:
+    embed-resources: true
+bibliography: references.bib
+execute:
+  message: false
+  warning: false
+---
+
+## Purpose
+
+This is a practice report built on the prepared NHANES Health Equity classroom dataset. It demonstrates reproducible reporting for a non-technical decision-maker audience. It is not a clinical finding, survey-weighted national estimate, or causal analysis.
+
+## Question
+
+How does mean BMI vary by income group among adults age 20-80 in the prepared NHANES classroom dataset?
+
+## Data source
+
+The report loads `examples/nhanes-equity/data/nhanes_equity_v6.csv`, a cached classroom snapshot derived from CDC/NCHS NHANES public-use data [@cdc-nhanes]. The row-level source is used only locally for classroom analysis; no private or identifiable records are added.
+
+```{r}
+#| label: load-data
+# AI prompt: Load the committed NHANES CSV with a relative repository path and stop clearly if the file is missing.
+# Verified: The source renders from the repository root and loads all 105,626 rows from the cached classroom CSV.
+library(tidyverse)
+library(knitr)
+
+candidate_paths <- c(
+  "examples/nhanes-equity/data/nhanes_equity_v6.csv",
+  "../../examples/nhanes-equity/data/nhanes_equity_v6.csv"
+)
+
+data_path <- candidate_paths[file.exists(candidate_paths)][1]
+if (is.na(data_path)) {
+  stop("Could not find examples/nhanes-equity/data/nhanes_equity_v6.csv")
+}
+
+nhanes <- read_csv(data_path, show_col_types = FALSE)
+stopifnot(all(c("Age", "BMI", "IncomeGroup") %in% names(nhanes)))
+```
+
+## Methods
+
+The analysis cohort includes records with age 20-80, inclusive. Missing Age, BMI, and IncomeGroup values are reported before grouping. The table and figure use complete cases for BMI and income group and are unweighted descriptive summaries.
+
+```{r}
+#| label: cohort-missingness
+# AI prompt: Define the inclusive adult cohort and report missingness for Age, BMI, and IncomeGroup before creating the complete-case summary.
+# Verified: The cohort has 57,137 records; the missingness table reports 0 missing Age, 1,009 missing BMI, and 5,395 missing IncomeGroup.
+analysis_df <- nhanes |>
+  filter(!is.na(Age), Age >= 20, Age <= 80)
+
+missingness <- tibble(
+  Variable = c("Age", "BMI", "IncomeGroup"),
+  `Cohort N` = nrow(analysis_df),
+  `Missing N` = c(
+    sum(is.na(analysis_df$Age)),
+    sum(is.na(analysis_df$BMI)),
+    sum(is.na(analysis_df$IncomeGroup))
+  )
+) |>
+  mutate(`Missing percent` = sprintf("%.1f%%", 100 * `Missing N` / `Cohort N`))
+
+kable(missingness, caption = "Missingness in the age 20-80 cohort.")
+```
+
+## Findings
+
+### Table: BMI by income group
+
+```{r}
+#| label: table-results
+# AI prompt: Create a code-generated Table 1 for the complete age-20-80 cohort, with N and mean (SD) for BMI and age, and export it to the submission outputs folder.
+# Verified: The table has three income groups and matches the independent A6 calculation: Ns 16,330, 15,293, and 19,228; mean BMI values 28.6, 29.4, and 29.3.
+income_summary <- analysis_df |>
+  filter(!is.na(BMI), !is.na(IncomeGroup)) |>
+  group_by(IncomeGroup) |>
+  summarise(
+    N = n(),
+    `BMI, mean (SD)` = sprintf("%.1f (%.1f)", mean(BMI), sd(BMI)),
+    `Age, mean (SD)` = sprintf("%.1f (%.1f)", mean(Age), sd(Age)),
+    .groups = "drop"
+  )
+
+output_dir <- "assignments/assignment09-reporting/submission/outputs"
+dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+write_csv(income_summary, file.path(output_dir, "table1.csv"))
+
+kable(income_summary, caption = "Descriptive BMI and age summary by income group.")
+```
+
+Mean BMI was lowest in the high-income group and slightly higher in the middle- and low-income groups. The absolute differences were modest, and the table does not establish significance or explain the pattern.
+
+### Figure: Mean BMI by income group
+
+```{r}
+#| label: bmi-figure
+#| fig-cap: "Mean BMI by income group among adults age 20-80 in the prepared classroom dataset. Values are unweighted and descriptive."
+# AI prompt: Generate a clear code-generated column chart of mean BMI by IncomeGroup and save the plot in the A9 outputs folder.
+# Verified: The HTML chart is generated from the complete-case grouped data, and the exported PNG shows the same three mean values and income-group order.
+plot_df <- analysis_df |>
+  filter(!is.na(BMI), !is.na(IncomeGroup)) |>
+  group_by(IncomeGroup) |>
+  summarise(mean_bmi = mean(BMI), n = n(), .groups = "drop")
+
+plot <- ggplot(plot_df, aes(x = IncomeGroup, y = mean_bmi)) +
+  geom_col(fill = "#4C78A8", width = 0.72) +
+  geom_text(aes(label = paste0("n=", scales::comma(n))), vjust = -0.5, size = 3.5) +
+  labs(
+    title = "Mean BMI by income group",
+    subtitle = "Adults age 20-80; unweighted descriptive summary",
+    x = "Income group",
+    y = "Mean BMI"
+  ) +
+  scale_y_continuous(limits = c(0, 32), expand = expansion(mult = c(0, 0.05))) +
+  theme_minimal(base_size = 12)
+
+print(plot)
+ggsave(file.path(output_dir, "mean-bmi-by-income.png"), plot, width = 8, height = 5, dpi = 150)
+```
+
+## Plain-language summary
+
+In this prepared classroom dataset, average BMI differed by income group among adults age 20-80. The low-income group had a mean BMI of 29.4, the middle-income group 29.3, and the high-income group 28.6. These descriptive differences may help frame health-equity questions, but they do not show that income caused BMI differences or that the same pattern applies to every U.S. adult. Missing BMI or income-group values were excluded from the grouped summary after missingness was checked.
+
+## Limitations
+
+- The source is a prepared classroom snapshot rather than raw NHANES microdata.
+- The summaries are unweighted and should not be described as national estimates.
+- The comparison is descriptive and does not test significance or control for measured confounders.
+- Complete-case grouping may exclude records with missing BMI or income-group values.
+- Group differences do not establish an individual-level or causal relationship.
+
+## Technical appendix
+
+The cohort definition is `Age >= 20 & Age <= 80`. Missingness is checked within the age cohort before complete-case BMI and income-group summaries. The generated CSV and PNG are written to `outputs/` so the evidence can be reused outside the HTML report.
+
+```{r}
+#| label: technical-counts
+# AI prompt: Print the source, cohort, missingness, and income-group result counts needed to audit the technical appendix.
+# Verified: These counts match the table and missingness outputs rendered earlier in the report.
+tibble(
+  Measure = c("Source rows", "Age cohort", "Missing BMI", "Missing IncomeGroup", "Complete-case rows"),
+  Value = c(
+    nrow(nhanes),
+    nrow(analysis_df),
+    sum(is.na(analysis_df$BMI)),
+    sum(is.na(analysis_df$IncomeGroup)),
+    nrow(analysis_df |> filter(!is.na(BMI), !is.na(IncomeGroup)))
+  )
+) |> kable(caption = "Technical audit counts.")
+```
